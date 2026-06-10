@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark" data-font="md" data-lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IDLEB TV — شاهد أفضل المسلسلات</title>
+  <meta name="description" content="منصة عربية لمشاهدة المسلسلات بجودة عالية" />
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#7C3AED" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/responsive.css" />
+</head>
+<body>
+  <!-- Loader -->
+  <div id="app-loader" class="app-loader">
+    <div class="loader-logo gradient-text">IDLEB TV</div>
+    <div class="loader-bar"><div class="loader-bar-inner"></div></div>
+  </div>
+
+  <!-- Particles background -->
+  <canvas id="particles" class="particles-canvas" aria-hidden="true"></canvas>
+
+  <!-- Navbar -->
+  <header id="navbar" class="navbar">
+    <nav class="navbar-inner">
+      <a href="index.html" class="logo">
+        <span class="logo-play">▶</span>
+        <span class="logo-text gradient-text">IDLEB</span>
+        <span class="logo-tv">TV</span>
+      </a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html" class="nav-link">الرئيسية</a></li>
+        <li><a href="pages/series.html" class="nav-link">المسلسلات</a></li>
+        <li><a href="pages/categories.html" class="nav-link">التصنيفات</a></li>
+        <li><a href="pages/recommendations.html" class="nav-link">موصى لك</a></li>
+        <li><a href="pages/new-episodes.html" class="nav-link">حلقات جديدة</a></li>
+        <li><a href="pages/coming-soon.html" class="nav-link">قريباً</a></li>
+        <li><a href="pages/countries.html" class="nav-link">الخريطة</a></li>
+      </ul>
+      <div class="nav-actions">
+        <a href="pages/search.html" class="icon-btn" aria-label="بحث"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></a>
+        <button id="theme-toggle" class="icon-btn" aria-label="تبديل الثيم"><svg id="theme-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+        <a href="pages/login.html" id="auth-btn" class="btn-primary">دخول</a>
+        <button id="menu-toggle" class="icon-btn menu-toggle" aria-label="القائمة">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
+    </nav>
+    <div id="mobile-menu" class="mobile-menu"></div>
+  </header>
+
+  <main id="main-content">
+    <!-- Hero Slider -->
+    <section id="hero" class="hero" aria-label="أبرز المسلسلات"></section>
+
+    <!-- Rows -->
+    <section class="row-section" data-row="latest" data-title="🔥 الأحدث"></section>
+    <section class="row-section" data-row="top-rated" data-title="⭐ الأعلى تقييماً"></section>
+    <section class="row-section" data-row="most-watched" data-title="👁 الأكثر مشاهدة"></section>
+    <section class="row-section" data-row="all" data-title="📺 كل المسلسلات" data-href="pages/series.html"></section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <div>
+        <a href="index.html" class="logo">
+          <span class="logo-play">▶</span>
+          <span class="logo-text gradient-text">IDLEB</span>
+          <span class="logo-tv">TV</span>
+        </a>
+        <p class="footer-tag">منصة عربية لمشاهدة أفضل المسلسلات بجودة عالية، مع ترجمة ودعم كامل.</p>
+      </div>
+      <div>
+        <h4>تصفح</h4>
+        <ul>
+          <li><a href="pages/series.html">كل المسلسلات</a></li>
+          <li><a href="pages/categories.html">التصنيفات</a></li>
+          <li><a href="pages/recommendations.html">موصى لك</a></li>
+          <li><a href="pages/new-episodes.html">حلقات جديدة</a></li>
+          <li><a href="pages/coming-soon.html">قريباً</a></li>
+          <li><a href="pages/countries.html">خريطة الدول</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>حسابي</h4>
+        <ul>
+          <li><a href="pages/watchlist.html">مفضلتي</a></li>
+          <li><a href="pages/queue.html">شاهد لاحقاً</a></li>
+          <li><a href="pages/history.html">السجل</a></li>
+          <li><a href="pages/downloads.html">التحميلات</a></li>
+          <li><a href="pages/profile.html">الملف الشخصي</a></li>
+          <li><a href="pages/admin.html">لوحة المشرف</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>تواصل</h4>
+        <ul>
+          <li>support@idleb.tv</li>
+          <li>تويتر · إنستغرام · فيسبوك</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">© <span id="year"></span> IDLEB TV — جميع الحقوق محفوظة.</div>
+  </footer>
+
+  <button id="back-to-top" class="back-to-top" aria-label="العودة للأعلى">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+  </button>
+
+  <!-- Toast container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/particles.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/hero.js"></script>
+  <script src="js/rows.js"></script>
+  <script src="js/recommendations.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/downloads.js"></script>
+  <script src="js/push.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/sw-register.js"></script>
+</body>
+</html>
