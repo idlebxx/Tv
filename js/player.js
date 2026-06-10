@@ -1,18 +1,41 @@
 /* ============================================
-   player.js — video player with skip intro, PiP, sleep timer
-   No Video.js dependency — pure HTML5 video for static.
+   player.js — video player with REAL video links
 ============================================ */
 
 (function () {
   'use strict';
   const { progress, queue, analytics } = window.IDLEB.stores;
+  const { api } = window.IDLEB;
+  const { showToast } = window.IDLEB.utils;
 
-  function buildPlayer(episode, nextEpisode, container) {
+  async function buildPlayer(episode, nextEpisode, container) {
+    // جلب روابط المشاهدة الحقيقية
+    showToast('جاري تحميل الروابط...', 'info');
+    const links = await api.getWatchLinks(episode.id);
+    
+    let videoUrl = null;
+    if (links && links.length > 0) {
+      // اختر أفضل جودة (أعلى جودة أولاً)
+      const qualityOrder = ['4K', '1080p', 'HD', '720p', '480p', '360p'];
+      const sorted = [...links].sort((a, b) => {
+        const aIdx = qualityOrder.indexOf(a.quality) || 99;
+        const bIdx = qualityOrder.indexOf(b.quality) || 99;
+        return aIdx - bIdx;
+      });
+      videoUrl = sorted[0].url;
+    }
+    
+    if (!videoUrl) {
+      showToast('لا توجد روابط متاحة للحلقة', 'error');
+      container.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--muted)">❌ لا توجد روابط متاحة للحلقة</div>';
+      return null;
+    }
+
     const wrap = document.createElement('div');
     wrap.className = 'player-wrap';
     wrap.innerHTML = `
       <video id="player-video" controls playsinline preload="metadata"
-        src="${episode.video_url}"
+        src="${escapeHTML(videoUrl)}"
         poster="${episode.thumbnail || ''}">
       </video>
       <button class="player-overlay-btn" id="skip-intro" style="display:none">
@@ -20,6 +43,9 @@
         تخطي المقدمة
       </button>
       <div class="player-controls-top">
+        <select id="quality-select" aria-label="جودة الفيديو">
+          ${links.map(link => `<option value="${escapeHTML(link.url)}" ${link.url === videoUrl ? 'selected' : ''}>${link.quality || 'HD'}</option>`).join('')}
+        </select>
         <select id="sleep-timer" aria-label="مؤقت النوم">
           <option value="0">بدون مؤقت</option>
           <option value="15">15 د</option>
@@ -43,9 +69,32 @@
     const skip = wrap.querySelector('#skip-intro');
     const nextOverlay = wrap.querySelector('#next-overlay');
     const sleepSel = wrap.querySelector('#sleep-timer');
+    const qualitySel = wrap.querySelector('#quality-select');
+
+    // تغيير الجودة
+    if (qualitySel) {
+      qualitySel.addEventListener('change', () => {
+        const currentTime = v.currentTime;
+        const wasPlaying = !v.paused;
+        v.src = qualitySel.value;
+        v.load();
+        v.currentTime = currentTime;
+        if (wasPlaying) v.play();
+        showToast('تم تغيير الجودة', 'success');
+      });
+    }
 
     let lastSave = 0;
     let sleepInterval;
+
+    v.addEventListener('loadedmetadata', () => {
+      // استعادة موضع المشاهدة السابق
+      const saved = progress.get().byEpisode?.[episode.id];
+      if (saved && saved.position > 10 && saved.position < v.duration - 30) {
+        const restore = confirm(`هل تريد استئناف المشاهدة من ${Math.floor(saved.position / 60)}:${Math.floor(saved.position % 60)}؟`);
+        if (restore) v.currentTime = saved.position;
+      }
+    });
 
     v.addEventListener('timeupdate', () => {
       const t = v.currentTime;
@@ -61,7 +110,13 @@
           ...p,
           byEpisode: {
             ...p.byEpisode,
-            [episode.id]: { episodeId: episode.id, seriesId: episode.series_id, position: t, duration: v.duration || 0, updatedAt: now }
+            [episode.id]: { 
+              episodeId: episode.id, 
+              seriesId: episode.series_id, 
+              position: t, 
+              duration: v.duration || 0, 
+              updatedAt: now 
+            }
           }
         }));
       }
@@ -74,20 +129,27 @@
       }));
     });
 
-    skip.addEventListener('click', () => { v.currentTime = 90; });
+    if (skip) {
+      skip.addEventListener('click', () => { v.currentTime = 90; });
+    }
 
     sleepSel.addEventListener('change', () => {
-      clearInterval(sleepInterval);
+      if (sleepInterval) clearInterval(sleepInterval);
       const mins = Number(sleepSel.value);
       if (!mins) return;
       let left = mins * 60;
       sleepInterval = setInterval(() => {
         left--;
-        if (left <= 0) { v.pause(); clearInterval(sleepInterval); sleepSel.value = '0'; }
+        if (left <= 0) { 
+          v.pause(); 
+          clearInterval(sleepInterval); 
+          sleepSel.value = '0';
+          showToast('تم إيقاف التشغيل بناءً على مؤقت النوم');
+        }
       }, 1000);
     });
 
-    // Media Session (lock screen)
+    // Media Session (شاشة القفل)
     if ('mediaSession' in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: episode.title || 'IDLEB TV',
