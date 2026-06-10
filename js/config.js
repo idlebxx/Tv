@@ -1,11 +1,11 @@
 /* ============================================
-   config.js — global configuration
+   config.js — global configuration (FIXED)
 ============================================ */
 
 window.IDLEB_CONFIG = {
   API_BASE: 'https://admin.dramaramadan.net/api',
-  USE_PROXY: false, // pure static — calls go direct. If CORS fails, use mock.
-  USE_MOCK: true,   // fallback to mock data when API fails
+  USE_PROXY: false,
+  USE_MOCK: false,  // ✅ تم التعديل: استخدام API الحقيقي
   ASSETS: {
     PLACEHOLDER_POSTER: 'data:image/svg+xml;utf8,' + encodeURIComponent(`
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300">
