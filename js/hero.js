@@ -1,5 +1,5 @@
 /* ============================================
-   hero.js — 3D hero slider
+   hero.js — 3D hero slider with REAL images
 ============================================ */
 
 (function () {
@@ -11,12 +11,30 @@
 
   async function init() {
     container.innerHTML = '<div class="loading-dots" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"><span></span><span></span><span></span></div>';
-    const { data } = await api.getMostWatched();
-    if (!data || !data.length) { container.style.display = 'none'; return; }
+    
+    let data = [];
+    try {
+      const result = await api.getMostWatched();
+      data = result.data || [];
+      if (!data.length) {
+        const latest = await api.getLatest();
+        data = latest.data || [];
+      }
+    } catch (e) {
+      console.error('Hero load error:', e);
+    }
+    
+    if (!data || !data.length) { 
+      container.style.display = 'none'; 
+      return; 
+    }
 
     // Cache for heart-toggle
     window.IDLEB_MOCK_DATA = window.IDLEB_MOCK_DATA || [];
-    data.forEach((s) => { if (!window.IDLEB_MOCK_DATA.find((x) => x.id === s.id)) window.IDLEB_MOCK_DATA.push(s); });
+    data.forEach((s) => { 
+      if (!window.IDLEB_MOCK_DATA.find((x) => x.id === s.id)) 
+        window.IDLEB_MOCK_DATA.push(s); 
+    });
 
     const items = data.slice(0, 5);
     let idx = 0;
@@ -33,7 +51,7 @@
           <span>${formatViews(items[0].views)} مشاهدة</span>
           <span>${escapeHTML(items[0].country || '')}</span>
         </div>
-        <p class="hero-desc" id="hero-desc">${escapeHTML(items[0].description || '')}</p>
+        <p class="hero-desc" id="hero-desc">${escapeHTML((items[0].description || '').substring(0, 150))}${(items[0].description || '').length > 150 ? '...' : ''}</p>
         <div class="hero-actions">
           <a href="pages/series-detail.html?id=${encodeURIComponent(items[0].id)}" class="btn-primary">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -68,8 +86,11 @@
           <span>${formatViews(item.views)} مشاهدة</span>
           <span>${escapeHTML(item.country || '')}</span>
         `;
-        desc.textContent = item.description || '';
-        content.querySelector('a').href = 'pages/series-detail.html?id=' + encodeURIComponent(item.id);
+        desc.textContent = (item.description || '').substring(0, 150) + ((item.description || '').length > 150 ? '...' : '');
+        const watchBtn = content.querySelector('.btn-primary');
+        if (watchBtn) watchBtn.href = 'pages/series-detail.html?id=' + encodeURIComponent(item.id);
+        const detailBtn = content.querySelector('.btn-ghost');
+        if (detailBtn) detailBtn.href = 'pages/series-detail.html?id=' + encodeURIComponent(item.id);
         bg.style.opacity = '1';
         content.style.opacity = '1';
         dots.querySelectorAll('button').forEach((b, j) => b.classList.toggle('active', i === j));
