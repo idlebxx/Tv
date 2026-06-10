@@ -1,13 +1,12 @@
 /* ============================================
-   api.js — fetch wrapper with REAL API support
+   api.js — fetch wrapper with AllOrigins Proxy
 ============================================ */
 
 (function () {
   'use strict';
 
-  const { API_BASE, USE_MOCK } = window.IDLEB_CONFIG;
+  let { API_BASE, USE_MOCK } = window.IDLEB_CONFIG;
 
-  // تحويل رابط الصورة إلى رابط كامل
   function getFullImageUrl(path) {
     if (!path) return null;
     if (path.startsWith('http')) return path;
@@ -15,23 +14,35 @@
   }
 
   async function fetchJSON(path, params) {
-    const url = new URL(API_BASE + path);
+    let baseUrl = API_BASE + path;
+    
     if (params) {
+      const searchParams = new URLSearchParams();
       Object.entries(params).forEach(([k, v]) => {
-        if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, v);
+        if (v !== undefined && v !== null && v !== '') searchParams.append(k, v);
       });
+      const queryString = searchParams.toString();
+      if (queryString) baseUrl += '?' + queryString;
     }
     
+    console.log('[api] Fetching:', baseUrl);
+    
     try {
-      const res = await fetch(url, { 
+      const res = await fetch(baseUrl, { 
         headers: { 
           'Accept': 'application/json',
           'User-Agent': 'okhttp/4.12.0'
-        },
-        mode: 'cors'
+        }
       });
-      if (!res.ok) throw new Error('API ' + res.status);
-      const data = await res.json();
+      
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      let data = await res.json();
+      
+      // AllOrigins يلف البيانات في خاصية contents
+      if (data.contents) {
+        data = JSON.parse(data.contents);
+      }
+      
       return data;
     } catch (e) {
       console.warn('[api] fetch error:', e.message);
@@ -39,7 +50,6 @@
     }
   }
 
-  // تحويل بيانات المسلسل من API إلى الشكل المطلوب
   function transformSeries(item) {
     return {
       id: String(item.id),
@@ -60,9 +70,7 @@
     };
   }
 
-  // ===== Public API =====
   const api = {
-    // جلب المسلسلات مع فلتر
     async getSeries(params = {}) {
       try {
         const defaultParams = {
@@ -71,7 +79,6 @@
           app_version: '9',
           sort_by: params.sort_by || 'newest'
         };
-        if (params.genre) defaultParams.genre = params.genre;
         
         const response = await fetchJSON('/series/', defaultParams);
         if (response && response.status === 'success' && response.data) {
@@ -87,17 +94,14 @@
       }
     },
 
-    // جلب مسلسل بواسطة ID
     async getSeriesById(id) {
       try {
-        // تجربة جلب مسلسل واحد أولاً
         const response = await fetchJSON('/series/' + id);
         if (response && response.status === 'success' && response.data) {
           return { data: transformSeries(response.data) };
         }
         throw new Error('Series not found');
       } catch (e) {
-        // إذا فشل، نجيب من القائمة العامة
         const all = await this.getSeries({ limit: 100 });
         const found = all.data.find(s => s.id === id);
         if (found) return { data: found };
@@ -105,42 +109,22 @@
       }
     },
 
-    // أحدث المسلسلات
     async getLatest() {
       return this.getSeries({ sort_by: 'newest', limit: 20 });
     },
 
-    // الأعلى تقييماً
     async getTopRated() {
       return this.getSeries({ sort_by: 'top_rated', limit: 20 });
     },
 
-    // الأكثر مشاهدة
     async getMostWatched() {
       return this.getSeries({ sort_by: 'most_viewed', limit: 20 });
     },
 
-    // أحدث حلقة
     async getLatestEpisode() {
       return this.getSeries({ sort_by: 'latest_episode', limit: 20 });
     },
 
-    // جلب المسلسلات حسب التصنيف
-    async getByGenre(genre, limit = 20) {
-      try {
-        const all = await this.getSeries({ limit: 100 });
-        const filtered = all.data.filter(s => 
-          s.categories && s.categories.some(c => 
-            c.toLowerCase().includes(genre.toLowerCase())
-          )
-        );
-        return { data: filtered.slice(0, limit), meta: { total: filtered.length } };
-      } catch (e) {
-        return { data: [], meta: { total: 0 } };
-      }
-    },
-
-    // جلب المواسم لمسلسل
     async getSeasons(seriesId) {
       try {
         const response = await fetchJSON('/seasons/', { series_id: seriesId, app_version: '9' });
@@ -160,7 +144,6 @@
       return { data: [{ id: seriesId, series_id: seriesId, number: 1, title: 'الموسم 1', episode_count: 0 }] };
     },
 
-    // جلب حلقات موسم
     async getEpisodes(seriesId, seasonId) {
       try {
         const response = await fetchJSON('/episodes/', { season_id: seasonId, app_version: '9' });
@@ -173,7 +156,7 @@
               number: e.episode_number || 1,
               title: `الحلقة ${e.episode_number || 1}`,
               thumbnail: getFullImageUrl(e.thumbnail),
-              video_url: null, // سيتم جلبها من endpoint منفصل
+              video_url: null,
               duration: e.duration || 45,
               views: e.views_count || 0,
               release_date: e.release_date || new Date().toISOString()
@@ -184,15 +167,24 @@
       return { data: [] };
     },
 
-    // جلب روابط المشاهدة لحلقة
     async getWatchLinks(episodeId) {
       try {
-        const url = `https://admin.dramaramadan.net/api/episodes/show.php?id=${episodeId}`;
+        const proxyUrl = 'https://api.allorigins.win/raw?url=';
+        const targetUrl = `https://admin.dramaramadan.net/api/episodes/show.php?id=${episodeId}`;
+        const url = proxyUrl + encodeURIComponent(targetUrl);
+        
         const response = await fetch(url, {
-          headers: { 'User-Agent': 'okhttp/4.12.0' }
+          headers: { 
+            'User-Agent': 'okhttp/4.12.0',
+            'Accept': 'application/json'
+          }
         });
+        
         if (response.ok) {
-          const data = await response.json();
+          let data = await response.json();
+          if (data.contents) {
+            data = JSON.parse(data.contents);
+          }
           if (data && data.status === 'success' && data.data && data.data.watch_links) {
             return data.data.watch_links.map(link => ({
               quality: link.quality || 'HD',
@@ -200,19 +192,19 @@
             }));
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.error('[api] Error getting watch links:', e);
+      }
       return [];
     },
 
-    // البحث
     async search(query) {
       if (!query) return { data: [] };
       try {
         const all = await this.getSeries({ limit: 100 });
         const filtered = all.data.filter(s => 
           s.title.toLowerCase().includes(query.toLowerCase()) ||
-          (s.title_en && s.title_en.toLowerCase().includes(query.toLowerCase())) ||
-          (s.description && s.description.toLowerCase().includes(query.toLowerCase()))
+          (s.title_en && s.title_en.toLowerCase().includes(query.toLowerCase()))
         );
         return { data: filtered };
       } catch (e) {
@@ -220,7 +212,6 @@
       }
     },
 
-    // جلب التصنيفات (من المسلسلات)
     async getCategories() {
       try {
         const all = await this.getSeries({ limit: 100 });
@@ -232,18 +223,16 @@
             });
           }
         });
-        const categories = Array.from(catMap.entries()).map(([name, count]) => ({
+        return { data: Array.from(catMap.entries()).map(([name, count]) => ({
           id: name.replace(/\s/g, '_'),
           name: name,
           count: count
-        }));
-        return { data: categories.slice(0, 20) };
+        })) };
       } catch (e) {
         return { data: [] };
       }
     },
 
-    // جلب الدول (من المسلسلات)
     async getCountries() {
       try {
         const all = await this.getSeries({ limit: 100 });
@@ -253,18 +242,16 @@
             countryMap.set(s.country, (countryMap.get(s.country) || 0) + 1);
           }
         });
-        const countries = Array.from(countryMap.entries()).map(([name, count]) => ({
+        return { data: Array.from(countryMap.entries()).map(([name, count]) => ({
           code: name.substring(0, 2).toUpperCase(),
           name: name,
           count: count
-        }));
-        return { data: countries };
+        })) };
       } catch (e) {
         return { data: [] };
       }
     },
 
-    // الحلقات الجديدة
     async getNewEpisodes() {
       return this.getLatestEpisode();
     }
