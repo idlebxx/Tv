@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مشاهدة — IDLEB TV</title>
+  <link rel="icon" href="../assets/favicon.svg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/responsive.css" />
+</head>
+<body>
+  <div id="app-loader" class="app-loader"><div class="loader-logo gradient-text">IDLEB TV</div><div class="loader-bar"><div class="loader-bar-inner"></div></div></div>
+  <canvas id="particles" class="particles-canvas"></canvas>
+  <header id="navbar" class="navbar">
+    <nav class="navbar-inner">
+      <a href="../index.html" class="logo"><span class="logo-play">▶</span><span class="logo-text gradient-text">IDLEB</span><span class="logo-tv">TV</span></a>
+      <ul class="nav-links"><li><a href="../index.html">الرئيسية</a></li><li><a href="series.html">المسلسلات</a></li><li><a href="categories.html">التصنيفات</a></li></ul>
+      <div class="nav-actions">
+        <button id="theme-toggle" class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+        <a href="login.html" id="auth-btn" class="btn-primary">دخول</a>
+        <button id="menu-toggle" class="icon-btn menu-toggle"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      </div>
+    </nav>
+    <div id="mobile-menu" class="mobile-menu"></div>
+  </header>
+
+  <main>
+    <div style="max-width:1400px;margin:0 auto;padding:5rem 1.5rem 2rem" id="watch-content"></div>
+  </main>
+
+  <footer class="site-footer"><div class="footer-bottom">© <span id="year"></span> IDLEB TV</div></footer>
+  <button id="back-to-top" class="back-to-top"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg></button>
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/store.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/particles.js"></script>
+  <script src="../js/player.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    (async function () {
+      const { escapeHTML, getQuery, showToast } = IDLEB.utils;
+      const { api } = IDLEB;
+      const seriesId = getQuery('seriesId');
+      const seasonId = getQuery('seasonId') || (seriesId + '-s1');
+      let episodeId = getQuery('episodeId');
+
+      if (!episodeId) {
+        const eps = await api.getEpisodes(seriesId, seasonId);
+        episodeId = eps.data[0].id;
+      }
+
+      const { data: episode } = await api.getEpisode(seriesId, seasonId, episodeId);
+      const eps = (await api.getEpisodes(seriesId, seasonId)).data;
+      const idx = eps.findIndex((e) => e.id === episodeId);
+      const nextEp = idx >= 0 ? eps[idx + 1] : null;
+      const { data: series } = await api.getSeriesById(seriesId);
+
+      // Add to history
+      IDLEB.stores.progress.set((p) => {
+        const filtered = (p.history || []).filter((h) => h.id !== episode.id);
+        return { ...p, history: [episode, ...filtered].slice(0, 200) };
+      });
+
+      document.getElementById('watch-content').innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem">
+          <a href="series-detail.html?id=${seriesId}" class="btn-ghost" style="background:var(--card);color:var(--fg)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            رجوع
+          </a>
+          <h1 style="font-size:1.125rem;font-weight:700">${escapeHTML(series.title)} — ${escapeHTML(episode.title)}</h1>
+          <button class="btn-ghost" id="add-queue" style="background:var(--card);color:var(--fg)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            لاحقاً
+          </button>
+        </div>
+        <div id="player-container"></div>
+        <div id="resume-bar"></div>
+        <div style="display:grid;grid-template-columns:1fr 320px;gap:1.5rem;margin-top:1.5rem" class="watch-layout">
+          <div>
+            <h2 style="font-size:1.5rem;font-weight:700;margin-bottom:0.5rem">${escapeHTML(episode.title)}</h2>
+            <p style="color:rgba(255,255,255,0.7);line-height:1.7">${escapeHTML(episode.description || '')}</p>
+            <div style="display:flex;gap:1rem;margin-top:1rem;font-size:0.875rem;color:var(--muted)">
+              <span>👁 ${episode.views} مشاهدة</span>
+              <span>⏱ ${episode.duration} دقيقة</span>
+              <span>📅 ${new Date(episode.release_date).toLocaleDateString('ar')}</span>
+            </div>
+          </div>
+          <aside class="glass" style="padding:0.75rem;border-radius:1rem;max-height:36rem;overflow-y:auto">
+            <h3 style="font-weight:700;padding:0.5rem">حلقات الموسم</h3>
+            ${eps.map((ep) => `
+              <a href="watch.html?seriesId=${seriesId}&seasonId=${seasonId}&episodeId=${ep.id}" class="ep-item ${ep.id === episodeId ? 'active' : ''}">
+                <div class="ep-thumb" style="background:var(--gradient);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:0.875rem">${ep.number}</div>
+                <div style="flex:1"><p style="font-size:0.875rem;font-weight:500">الحلقة ${ep.number}</p><p style="font-size:0.7rem;color:var(--muted)">${escapeHTML(ep.title)}</p></div>
+              </a>
+            `).join('')}
+          </aside>
+        </div>
+      `;
+
+      // Build player
+      IDLEB.player.buildPlayer(episode, nextEp, document.getElementById('player-container'));
+
+      // Resume bar
+      const saved = (IDLEB.stores.progress.get().byEpisode || {})[episode.id];
+      if (saved && saved.position > 5) {
+        const resume = document.getElementById('resume-bar');
+        resume.innerHTML = `
+          <div class="glass" style="margin-top:0.75rem;padding:0.75rem;display:flex;align-items:center;gap:0.75rem;border-radius:0.75rem">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary-3)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span style="font-size:0.875rem">أكملت ${Math.floor(saved.position/60)} دقيقة</span>
+            <button class="btn-primary" id="resume-btn" style="margin-right:auto;font-size:0.875rem;padding:0.5rem 1rem">استئناف</button>
+          </div>
+        `;
+        document.getElementById('resume-btn').onclick = () => {
+          const v = document.getElementById('player-video');
+          if (v) v.currentTime = saved.position;
+        };
+      }
+
+      // Add to queue
+      document.getElementById('add-queue').onclick = () => {
+        const list = IDLEB.stores.queue.get().items;
+        if (list.some((e) => e.id === episode.id)) return showToast('موجود في القائمة');
+        IDLEB.stores.queue.set((q) => ({ ...q, items: [episode, ...q.items] }));
+        showToast('أضيف لـ "شاهد لاحقاً"', 'success');
+      };
+    })();
+  </script>
+  <style>@media (max-width:1024px){.watch-layout{grid-template-columns:1fr!important}}</style>
+</body>
+</html>

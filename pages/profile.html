@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>الملف الشخصي — IDLEB TV</title>
+  <link rel="icon" href="../assets/favicon.svg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/responsive.css" />
+</head>
+<body>
+  <div id="app-loader" class="app-loader"><div class="loader-logo gradient-text">IDLEB TV</div><div class="loader-bar"><div class="loader-bar-inner"></div></div></div>
+  <canvas id="particles" class="particles-canvas"></canvas>
+  <header id="navbar" class="navbar">
+    <nav class="navbar-inner">
+      <a href="../index.html" class="logo"><span class="logo-play">▶</span><span class="logo-text gradient-text">IDLEB</span><span class="logo-tv">TV</span></a>
+      <div class="nav-actions"><button id="theme-toggle" class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button></div>
+    </nav>
+  </header>
+  <main>
+    <div style="max-width:1400px;margin:0 auto;padding:5rem 1.5rem 2rem" id="content"></div>
+  </main>
+  <footer class="site-footer"><div class="footer-bottom">© <span id="year"></span> IDLEB TV</div></footer>
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/store.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/particles.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    (function () {
+      const { escapeHTML, seriesCardHTML, attachCardEvents, showToast } = IDLEB.utils;
+      const { api } = IDLEB;
+      const user = IDLEB.stores.auth.get().user;
+      if (!user) { location.href = 'login.html'; return; }
+
+      const wl = IDLEB.stores.watchlist.get().items;
+      const hist = IDLEB.stores.progress.get().history || [];
+      const views = IDLEB.stores.analytics.get().views || {};
+      const ratings = IDLEB.stores.ratings.get().bySeries || {};
+      const totalWatched = Object.values(views).reduce((a, b) => a + b, 0);
+
+      let tab = 'overview';
+      function render() {
+        const c = document.getElementById('content');
+        c.innerHTML = `
+          <div class="glass-strong" style="border-radius:1.5rem;padding:1.5rem;margin-bottom:1.5rem">
+            <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:center">
+              <div style="width:5rem;height:5rem;border-radius:9999px;background:var(--gradient);display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:900">${escapeHTML(user.name.charAt(0).toUpperCase())}</div>
+              <div style="flex:1">
+                <h1 style="font-size:1.5rem;font-weight:700">${escapeHTML(user.name)}</h1>
+                <p style="color:var(--muted)">${escapeHTML(user.email)}</p>
+                <p style="font-size:0.75rem;color:var(--muted);margin-top:0.25rem">دخول عبر: ${escapeHTML(user.provider)}</p>
+              </div>
+              <button class="btn-ghost" id="logout" style="color:#FCA5A5">خروج</button>
+            </div>
+            <div class="grid-cards" style="grid-template-columns:repeat(auto-fit, minmax(120px, 1fr));margin-top:1.5rem">
+              <div class="stat-card"><div class="stat-icon" style="color:var(--pink)">♥</div><div class="stat-value">${wl.length}</div><div class="stat-label">مفضلتي</div></div>
+              <div class="stat-card"><div class="stat-icon" style="color:var(--primary-3)">👁</div><div class="stat-value">${totalWatched}</div><div class="stat-label">مشاهدات</div></div>
+              <div class="stat-card"><div class="stat-icon" style="color:#4ADE80">⏱</div><div class="stat-value">${hist.length}</div><div class="stat-label">حلقات</div></div>
+              <div class="stat-card"><div class="stat-icon" style="color:#FACC15">★</div><div class="stat-value">${Object.keys(ratings).length}</div><div class="stat-label">تقييمات</div></div>
+            </div>
+          </div>
+
+          <div class="tabs">
+            <button class="tab ${tab==='overview'?'active':''}" data-t="overview">نظرة عامة</button>
+            <button class="tab ${tab==='watchlist'?'active':''}" data-t="watchlist">مفضلتي</button>
+            <button class="tab ${tab==='history'?'active':''}" data-t="history">السجل</button>
+            <button class="tab ${tab==='ratings'?'active':''}" data-t="ratings">تقييماتي</button>
+            <button class="tab ${tab==='settings'?'active':''}" data-t="settings">الإعدادات</button>
+          </div>
+
+          <div id="tab-content"></div>
+        `;
+        c.querySelectorAll('[data-t]').forEach((b) => b.onclick = () => { tab = b.dataset.t; render(); });
+        document.getElementById('logout').onclick = () => { if (confirm('تسجيل الخروج؟')) IDLEB.auth.logout(); };
+
+        const tc = document.getElementById('tab-content');
+        if (tab === 'overview') {
+          tc.innerHTML = hist.length ? '<h2 style="font-size:1.25rem;font-weight:700;margin-bottom:1rem">آخر ما شاهدت</h2>' +
+            hist.slice(0, 5).map((ep) => `
+              <a href="watch.html?seriesId=${ep.series_id}&seasonId=${ep.season_id}&episodeId=${ep.id}" class="glass" style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem;border-radius:0.75rem;margin-bottom:0.5rem">
+                <div style="width:5rem;height:3rem;background:var(--gradient);border-radius:0.375rem;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:0.875rem">${ep.number}</div>
+                <div style="flex:1"><p style="font-weight:500;font-size:0.875rem">${escapeHTML(ep.title)}</p><p style="font-size:0.7rem;color:var(--muted)">حلقة ${ep.number}</p></div>
+              </a>
+            `).join('') : '<div class="empty-state"><p>لم تشاهد أي حلقة بعد</p></div>';
+        } else if (tab === 'watchlist') {
+          tc.innerHTML = wl.length ? '<div class="grid-cards">' + wl.map(seriesCardHTML).join('') + '</div>' : '<div class="empty-state"><p>قائمة المفضلة فارغة</p></div>';
+          attachCardEvents(tc);
+        } else if (tab === 'history') {
+          tc.innerHTML = hist.length ? hist.map((ep) => `
+            <a href="watch.html?seriesId=${ep.series_id}&seasonId=${ep.season_id}&episodeId=${ep.id}" class="glass" style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem;border-radius:0.75rem;margin-bottom:0.5rem">
+              <div style="width:5rem;height:3rem;background:var(--gradient);border-radius:0.375rem;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:0.875rem">${ep.number}</div>
+              <div style="flex:1"><p style="font-weight:500">${escapeHTML(ep.title)}</p><p style="font-size:0.75rem;color:var(--muted)">حلقة ${ep.number}</p></div>
+            </a>
+          `).join('') : '<div class="empty-state"><p>السجل فارغ</p></div>';
+        } else if (tab === 'ratings') {
+          const ids = Object.keys(ratings);
+          if (!ids.length) { tc.innerHTML = '<div class="empty-state"><p>لم تقم بأي تقييم</p></div>'; return; }
+          (async () => {
+            const all = (await api.getSeries()).data;
+            tc.innerHTML = '<div class="grid-cards">' + ids.map((id) => {
+              const s = all.find((x) => x.id === id);
+              if (!s) return '';
+              return `<a href="series-detail.html?id=${id}" class="glass" style="border-radius:0.75rem;overflow:hidden">
+                <div style="width:100%;aspect-ratio:2/3;background:var(--gradient)"></div>
+                <div style="padding:0.75rem">
+                  <p style="font-weight:500;font-size:0.875rem">${escapeHTML(s.title)}</p>
+                  <div style="display:flex;margin-top:0.25rem">${Array.from({length:5},(_,i)=>`<span style="color:${i<ratings[id]?'#FACC15':'rgba(255,255,255,0.2)'}">★</span>`).join('')}</div>
+                </div>
+              </a>`;
+            }).join('') + '</div>';
+          })();
+        } else if (tab === 'settings') {
+          const cur = IDLEB.stores.settings.get();
+          tc.innerHTML = `
+            <div class="glass" style="padding:1.5rem;border-radius:1rem;display:flex;flex-direction:column;gap:1rem">
+              <div>
+                <label style="display:block;font-size:0.875rem;margin-bottom:0.5rem">حجم الخط</label>
+                <div style="display:flex;gap:0.5rem">
+                  ${['sm','md','lg'].map((s) => `<button class="tab ${cur.fontSize===s?'active':''}" data-fs="${s}">${s==='sm'?'صغير':s==='md'?'متوسط':'كبير'}</button>`).join('')}
+                </div>
+              </div>
+              <div>
+                <label style="display:block;font-size:0.875rem;margin-bottom:0.5rem">الثيم</label>
+                <div style="display:flex;gap:0.5rem">
+                  ${['dark','light','amoled'].map((t) => `<button class="tab ${cur.theme===t?'active':''}" data-th="${t}">${t==='dark'?'داكن':t==='light'?'فاتح':'AMOLED'}</button>`).join('')}
+                </div>
+              </div>
+            </div>
+          `;
+          tc.querySelectorAll('[data-fs]').forEach((b) => b.onclick = () => {
+            IDLEB.stores.settings.set({ fontSize: b.dataset.fs });
+            render();
+          });
+          tc.querySelectorAll('[data-th]').forEach((b) => b.onclick = () => {
+            IDLEB.stores.settings.set({ theme: b.dataset.th });
+            render();
+          });
+        }
+      }
+      render();
+    })();
+  </script>
+</body>
+</html>

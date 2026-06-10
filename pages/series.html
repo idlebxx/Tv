@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>المسلسلات — IDLEB TV</title>
+  <link rel="icon" href="../assets/favicon.svg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/responsive.css" />
+</head>
+<body>
+  <div id="app-loader" class="app-loader"><div class="loader-logo gradient-text">IDLEB TV</div><div class="loader-bar"><div class="loader-bar-inner"></div></div></div>
+  <canvas id="particles" class="particles-canvas"></canvas>
+  <header id="navbar" class="navbar">
+    <nav class="navbar-inner">
+      <a href="../index.html" class="logo"><span class="logo-play">▶</span><span class="logo-text gradient-text">IDLEB</span><span class="logo-tv">TV</span></a>
+      <ul class="nav-links">
+        <li><a href="../index.html">الرئيسية</a></li>
+        <li><a href="series.html" class="active">المسلسلات</a></li>
+        <li><a href="categories.html">التصنيفات</a></li>
+        <li><a href="recommendations.html">موصى لك</a></li>
+        <li><a href="new-episodes.html">حلقات جديدة</a></li>
+        <li><a href="coming-soon.html">قريباً</a></li>
+        <li><a href="countries.html">الخريطة</a></li>
+      </ul>
+      <div class="nav-actions">
+        <a href="search.html" class="icon-btn" aria-label="بحث"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></a>
+        <button id="theme-toggle" class="icon-btn" aria-label="تبديل الثيم"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+        <a href="login.html" id="auth-btn" class="btn-primary">دخول</a>
+        <button id="menu-toggle" class="icon-btn menu-toggle" aria-label="القائمة"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      </div>
+    </nav>
+    <div id="mobile-menu" class="mobile-menu"></div>
+  </header>
+
+  <main>
+    <div class="page-head">
+      <div>
+        <h1>📺 كل المسلسلات</h1>
+        <p id="result-count">جاري التحميل...</p>
+      </div>
+    </div>
+
+    <section style="max-width:1400px;margin:0 auto;padding:0 1.5rem;display:grid;grid-template-columns:240px 1fr;gap:1.5rem" class="series-layout">
+      <aside class="filters glass" style="padding:1rem;border-radius:1rem">
+        <h3 style="margin-bottom:0.5rem">فلاتر</h3>
+        <label>الترتيب</label>
+        <select id="filter-sort">
+          <option value="newest">الأحدث</option>
+          <option value="rating">الأعلى تقييماً</option>
+          <option value="views">الأكثر مشاهدة</option>
+        </select>
+        <label style="margin-top:0.75rem">التصنيف</label>
+        <select id="filter-category"><option value="">الكل</option></select>
+        <label style="margin-top:0.75rem">الدولة</label>
+        <select id="filter-country"><option value="">الكل</option></select>
+        <label style="margin-top:0.75rem">السنة</label>
+        <input id="filter-year" type="number" placeholder="2024" />
+        <button class="btn-ghost" id="reset-filters" style="margin-top:1rem;width:100%;justify-content:center">إعادة تعيين</button>
+      </aside>
+
+      <div>
+        <div id="series-grid" class="grid-cards"></div>
+        <div id="pagination" style="display:flex;justify-content:center;gap:0.5rem;margin-top:2rem"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-bottom">© <span id="year"></span> IDLEB TV</div>
+  </footer>
+
+  <button id="back-to-top" class="back-to-top"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg></button>
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/store.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/particles.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    (async function () {
+      const { escapeHTML, seriesCardHTML, attachCardEvents, skeletonCard, getQuery, setQuery, showToast } = IDLEB.utils;
+      const { api } = IDLEB;
+
+      let page = Number(getQuery('page') || 1);
+
+      async function load() {
+        const grid = document.getElementById('series-grid');
+        grid.innerHTML = Array.from({ length: 12 }, skeletonCard).join('');
+        const params = {
+          page,
+          category: getQuery('category') || '',
+          country: getQuery('country') || '',
+          year: getQuery('year') || '',
+          sort: getQuery('sort') || 'newest',
+        };
+        const { data, meta } = await api.getSeries(params);
+        window.IDLEB_MOCK_DATA = window.IDLEB_MOCK_DATA || [];
+        data.forEach((s) => { if (!window.IDLEB_MOCK_DATA.find((x) => x.id === s.id)) window.IDLEB_MOCK_DATA.push(s); });
+        grid.innerHTML = data.length ? data.map(seriesCardHTML).join('') : '<div class="empty-state"><p>لا توجد نتائج</p></div>';
+        attachCardEvents(grid);
+        document.getElementById('result-count').textContent = meta ? `${meta.total} مسلسل` : `${data.length} نتيجة`;
+
+        // Pagination
+        const pag = document.getElementById('pagination');
+        if (meta && meta.last_page > 1) {
+          pag.innerHTML = `
+            <button class="btn-ghost" id="prev-p" ${page === 1 ? 'disabled' : ''}>السابق</button>
+            <span style="padding:0.5rem 1rem;color:var(--muted)">صفحة ${page} من ${meta.last_page}</span>
+            <button class="btn-ghost" id="next-p" ${page === meta.last_page ? 'disabled' : ''}>التالي</button>
+          `;
+          document.getElementById('prev-p').onclick = () => { page = Math.max(1, page - 1); setQuery('page', page); load(); };
+          document.getElementById('next-p').onclick = () => { page = Math.min(meta.last_page, page + 1); setQuery('page', page); load(); };
+        } else pag.innerHTML = '';
+      }
+
+      // Load filter options
+      const cats = await api.getCategories();
+      const countries = await api.getCountries();
+      document.getElementById('filter-category').innerHTML += cats.data.map((c) => `<option value="${c.id}" ${getQuery('category') === c.id ? 'selected' : ''}>${escapeHTML(c.name)}</option>`).join('');
+      document.getElementById('filter-country').innerHTML += countries.data.map((c) => `<option value="${c.code}" ${getQuery('country') === c.code ? 'selected' : ''}>${escapeHTML(c.name)}</option>`).join('');
+
+      // Set initial values
+      document.getElementById('filter-sort').value = getQuery('sort') || 'newest';
+      document.getElementById('filter-year').value = getQuery('year') || '';
+
+      // Filter listeners
+      document.getElementById('filter-sort').onchange = (e) => { setQuery('sort', e.target.value); page = 1; setQuery('page', null); load(); };
+      document.getElementById('filter-category').onchange = (e) => { setQuery('category', e.target.value); page = 1; setQuery('page', null); load(); };
+      document.getElementById('filter-country').onchange = (e) => { setQuery('country', e.target.value); page = 1; setQuery('page', null); load(); };
+      document.getElementById('filter-year').onchange = (e) => { setQuery('year', e.target.value); page = 1; setQuery('page', null); load(); };
+      document.getElementById('reset-filters').onclick = () => { window.location.search = ''; };
+
+      load();
+    })();
+  </script>
+  <style>
+    @media (max-width: 1024px) { .series-layout { grid-template-columns: 1fr !important; } }
+  </style>
+</body>
+</html>

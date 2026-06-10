@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>التحميلات — IDLEB TV</title>
+  <link rel="icon" href="../assets/favicon.svg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/responsive.css" />
+</head>
+<body>
+  <div id="app-loader" class="app-loader"><div class="loader-logo gradient-text">IDLEB TV</div><div class="loader-bar"><div class="loader-bar-inner"></div></div></div>
+  <canvas id="particles" class="particles-canvas"></canvas>
+  <header id="navbar" class="navbar">
+    <nav class="navbar-inner">
+      <a href="../index.html" class="logo"><span class="logo-play">▶</span><span class="logo-text gradient-text">IDLEB</span><span class="logo-tv">TV</span></a>
+      <div class="nav-actions"><button id="theme-toggle" class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button></div>
+    </nav>
+  </header>
+  <main>
+    <div class="page-head"><h1>⬇ التحميلات</h1></div>
+    <div style="max-width:64rem;margin:0 auto;padding:0 1.5rem">
+      <p style="color:var(--muted);font-size:0.875rem;margin-bottom:1rem">يدعم المشاهدة دون اتصال — يستخدم IndexedDB</p>
+      <button class="btn-primary" id="demo-dl">تحميل تجريبي</button>
+      <div id="progress" style="display:none;margin:1rem 0">
+        <p style="font-size:0.875rem;margin-bottom:0.5rem" id="dl-name">جاري التحميل...</p>
+        <div style="height:0.5rem;border-radius:0.25rem;background:var(--card);overflow:hidden">
+          <div id="dl-bar" style="height:100%;background:var(--gradient);width:0;transition:width 0.2s"></div>
+        </div>
+      </div>
+      <div id="list"></div>
+    </div>
+  </main>
+  <footer class="site-footer"><div class="footer-bottom">© <span id="year"></span> IDLEB TV</div></footer>
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/store.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/particles.js"></script>
+  <script src="../js/downloads.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    (function () {
+      const { escapeHTML, showToast } = IDLEB.utils;
+      const list = document.getElementById('list');
+
+      function fmtSize(b) {
+        if (b > 1e9) return (b/1e9).toFixed(1) + ' GB';
+        if (b > 1e6) return (b/1e6).toFixed(1) + ' MB';
+        return (b/1e3).toFixed(0) + ' KB';
+      }
+
+      async function render() {
+        const items = await IDLEB.downloads.loadAll();
+        if (!items.length) {
+          list.innerHTML = '<div class="empty-state"><p>لا توجد تحميلات بعد</p></div>';
+          return;
+        }
+        list.innerHTML = items.map((it) => `
+          <div class="glass" style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem;border-radius:0.75rem;margin-bottom:0.5rem">
+            <div style="width:3rem;height:3rem;background:rgba(124,58,237,0.3);border-radius:0.5rem;display:flex;align-items:center;justify-content:center;color:var(--primary-3)">⬇</div>
+            <div style="flex:1">
+              <p style="font-weight:500;font-size:0.875rem">${escapeHTML(it.episodeTitle)}</p>
+              <p style="font-size:0.75rem;color:var(--muted)">${fmtSize(it.size)} · ${new Date(it.downloadedAt).toLocaleDateString('ar')}</p>
+            </div>
+            <a href="${it.url}" target="_blank" class="icon-btn" aria-label="تشغيل">▶</a>
+            <button class="icon-btn" data-rm="${it.id}" style="color:#FCA5A5" aria-label="حذف">✕</button>
+          </div>
+        `).join('');
+        list.querySelectorAll('[data-rm]').forEach((b) => b.onclick = async () => {
+          await IDLEB.downloads.removeFile(b.dataset.rm);
+          render();
+        });
+      }
+      render();
+
+      document.getElementById('demo-dl').onclick = async () => {
+        const url = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+        const prog = document.getElementById('progress');
+        const bar = document.getElementById('dl-bar');
+        const name = document.getElementById('dl-name');
+        prog.style.display = 'block';
+        name.textContent = 'Big Buck Bunny (demo)';
+        try {
+          const { blob, size } = await IDLEB.downloads.downloadFile(url, 'demo', (p) => {
+            bar.style.width = (p * 100) + '%';
+          });
+          const blobUrl = URL.createObjectURL(blob);
+          await IDLEB.downloads.saveFile({
+            id: 'demo_' + Date.now(),
+            seriesTitle: 'Demo',
+            episodeTitle: 'Big Buck Bunny (demo)',
+            size,
+            url: blobUrl,
+            downloadedAt: Date.now(),
+          });
+          showToast('تم التحميل!', 'success');
+          render();
+        } catch (e) {
+          showToast('فشل التحميل', 'error');
+        } finally {
+          prog.style.display = 'none';
+        }
+      };
+    })();
+  </script>
+</body>
+</html>

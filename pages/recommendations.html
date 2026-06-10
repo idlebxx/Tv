@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>موصى لك — IDLEB TV</title>
+  <link rel="icon" href="../assets/favicon.svg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/responsive.css" />
+</head>
+<body>
+  <div id="app-loader" class="app-loader"><div class="loader-logo gradient-text">IDLEB TV</div><div class="loader-bar"><div class="loader-bar-inner"></div></div></div>
+  <canvas id="particles" class="particles-canvas"></canvas>
+  <header id="navbar" class="navbar">
+    <nav class="navbar-inner">
+      <a href="../index.html" class="logo"><span class="logo-play">▶</span><span class="logo-text gradient-text">IDLEB</span><span class="logo-tv">TV</span></a>
+      <ul class="nav-links"><li><a href="../index.html">الرئيسية</a></li><li><a href="recommendations.html" class="active">موصى لك</a></li></ul>
+      <div class="nav-actions"><button id="theme-toggle" class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button><a href="login.html" id="auth-btn" class="btn-primary">دخول</a></div>
+    </nav>
+  </header>
+  <main>
+    <div class="page-head"><div><h1>🤖 موصى لك</h1><p>اقتراحات ذكية مبنية على ذوقك</p></div></div>
+    <div style="max-width:1400px;margin:0 auto;padding:0 1.5rem" id="content"></div>
+  </main>
+  <footer class="site-footer"><div class="footer-bottom">© <span id="year"></span> IDLEB TV</div></footer>
+  <div id="toast-container" class="toast-container"></div>
+  <script src="../js/config.js"></script>
+  <script src="../js/store.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/particles.js"></script>
+  <script src="../js/recommendations.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    (async function () {
+      const { seriesCardHTML, attachCardEvents } = IDLEB.utils;
+      const { data: all } = await IDLEB.api.getSeries();
+      const forYou = IDLEB.recs.forYou(all, 12);
+      const hidden = IDLEB.recs.hiddenGems(all, 10);
+      const trending = IDLEB.recs.trending(all, 10);
+      const hist = IDLEB.stores.progress.get().history || [];
+      const anchor = hist[0] ? all.find((s) => s.id === hist[0].series_id) : all.sort((a, b) => b.rating - a.rating)[0];
+      const similar = anchor ? IDLEB.recs.similar(anchor, all, 12) : [];
+
+      function section(title, reason, list) {
+        if (!list.length) return '';
+        const items = list.map((r) => r.s || r).filter(Boolean);
+        return `<section style="margin-bottom:3rem"><h2 style="font-size:1.25rem;font-weight:700">${title}</h2><p style="font-size:0.75rem;color:var(--muted);margin:0.25rem 0 1rem">${reason}</p><div class="grid-cards">${items.map(seriesCardHTML).join('')}</div></section>`;
+      }
+
+      document.getElementById('content').innerHTML =
+        section('🎯 خصيصاً لك', 'بناءً على التصنيفات اللي تفضلها', forYou) +
+        section('💎 كنوز مخفية', 'تقييم عالي + مشاهدات قليلة', hidden) +
+        section('🔥 الأكثر رواجاً', 'متابعة لأحدث المشاهدات', trending) +
+        section('🎬 شبيه بـ ' + (anchor?.title || ''), 'نفس التصنيفات أو الدولة', similar);
+
+      attachCardEvents(document.getElementById('content'));
+      window.IDLEB_MOCK_DATA = all;
+    })();
+  </script>
+</body>
+</html>

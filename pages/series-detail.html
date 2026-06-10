@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تفاصيل المسلسل — IDLEB TV</title>
+  <link rel="icon" href="../assets/favicon.svg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/responsive.css" />
+</head>
+<body>
+  <div id="app-loader" class="app-loader"><div class="loader-logo gradient-text">IDLEB TV</div><div class="loader-bar"><div class="loader-bar-inner"></div></div></div>
+  <canvas id="particles" class="particles-canvas"></canvas>
+  <header id="navbar" class="navbar">
+    <nav class="navbar-inner">
+      <a href="../index.html" class="logo"><span class="logo-play">▶</span><span class="logo-text gradient-text">IDLEB</span><span class="logo-tv">TV</span></a>
+      <ul class="nav-links">
+        <li><a href="../index.html">الرئيسية</a></li>
+        <li><a href="series.html">المسلسلات</a></li>
+        <li><a href="categories.html">التصنيفات</a></li>
+        <li><a href="recommendations.html">موصى لك</a></li>
+        <li><a href="new-episodes.html">حلقات جديدة</a></li>
+        <li><a href="coming-soon.html">قريباً</a></li>
+        <li><a href="countries.html">الخريطة</a></li>
+      </ul>
+      <div class="nav-actions">
+        <a href="search.html" class="icon-btn" aria-label="بحث"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></a>
+        <button id="theme-toggle" class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+        <a href="login.html" id="auth-btn" class="btn-primary">دخول</a>
+        <button id="menu-toggle" class="icon-btn menu-toggle"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      </div>
+    </nav>
+    <div id="mobile-menu" class="mobile-menu"></div>
+  </header>
+
+  <main>
+    <div id="detail-content"></div>
+  </main>
+
+  <footer class="site-footer"><div class="footer-bottom">© <span id="year"></span> IDLEB TV</div></footer>
+  <button id="back-to-top" class="back-to-top"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg></button>
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/store.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/particles.js"></script>
+  <script src="../js/recommendations.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    (async function () {
+      const { escapeHTML, formatViews, poster, showToast, getQuery, seriesCardHTML, attachCardEvents } = IDLEB.utils;
+      const { api } = IDLEB;
+      const id = getQuery('id') || '1';
+
+      const { data: series } = await api.getSeriesById(id);
+      window.IDLEB_MOCK_DATA = window.IDLEB_MOCK_DATA || [];
+      if (!window.IDLEB_MOCK_DATA.find((x) => x.id === series.id)) window.IDLEB_MOCK_DATA.push(series);
+
+      const seasons = (await api.getSeasons(id)).data;
+      const all = (await api.getSeries()).data;
+      const similar = IDLEB.recs.similar(series, all, 12);
+
+      const inList = IDLEB.stores.watchlist.get().items.some((x) => x.id === id);
+      const userRating = (IDLEB.stores.ratings.get().bySeries || {})[id];
+
+      document.getElementById('detail-content').innerHTML = `
+        <div style="position:relative;height:60vh;min-height:400px;overflow:hidden">
+          <img src="${escapeHTML(poster(series.backdrop || series.poster))}" style="width:100%;height:100%;object-fit:cover" />
+          <div style="position:absolute;inset:0;background:linear-gradient(to top,var(--bg) 5%,transparent 50%),linear-gradient(to left,var(--bg) 30%,transparent 60%)"></div>
+          <div style="position:absolute;bottom:0;inset-inline:0;padding:2rem;max-width:1400px;margin:0 auto">
+            <h1 style="font-size:clamp(2rem,5vw,3.5rem);font-weight:900;margin-bottom:0.75rem">${escapeHTML(series.title)}</h1>
+            <div style="display:flex;flex-wrap:wrap;gap:1rem;font-size:0.875rem;color:rgba(255,255,255,0.8)">
+              <span style="color:#FACC15">★ ${series.rating?.toFixed(1) || '—'}</span>
+              <span>${series.year || ''}</span>
+              <span>${escapeHTML(series.country || '')}</span>
+              <span>${seasons.length} مواسم</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="max-width:1400px;margin:0 auto;padding:2rem 1.5rem">
+          <div style="display:flex;flex-wrap:wrap;gap:0.75rem;margin-bottom:2rem">
+            ${seasons[0] ? `<a class="btn-primary" href="watch.html?seriesId=${series.id}&seasonId=${seasons[0].id}&episodeId=" onclick="this.href+='${seasons[0].id}-s1-e1'"><svg width="18" height="18" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg> مشاهدة</a>` : ''}
+            <button class="btn-ghost" id="toggle-list" style="background:var(--card);color:var(--fg)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="${inList ? 'var(--pink)' : 'none'}" stroke="${inList ? 'var(--pink)' : 'currentColor'}" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              ${inList ? 'في المفضلة' : 'أضف للمفضلة'}
+            </button>
+            <div class="star-row" id="rating-row">
+              ${[1,2,3,4,5].map((n) => `<button data-rating="${n}" class="${n <= (userRating||0) ? 'filled' : ''}"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></button>`).join('')}
+            </div>
+            <button class="btn-ghost" id="share-btn" style="background:var(--card);color:var(--fg)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              مشاركة
+            </button>
+          </div>
+
+          <p style="color:rgba(255,255,255,0.8);line-height:1.7;margin-bottom:2rem;max-width:48rem">${escapeHTML(series.description || '')}</p>
+
+          <section style="margin-bottom:3rem">
+            <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:1rem" class="gradient-text">المواسم والحلقات</h2>
+            <div id="seasons-list" style="display:flex;flex-direction:column;gap:0.75rem"></div>
+          </section>
+
+          ${series.cast && series.cast.length ? `
+            <section style="margin-bottom:3rem">
+              <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:1rem" class="gradient-text">طاقم العمل</h2>
+              <div class="grid-cards">
+                ${series.cast.map((c) => `
+                  <div class="glass" style="padding:0.75rem;text-align:center;border-radius:0.75rem">
+                    <div style="width:5rem;height:5rem;border-radius:9999px;background:var(--gradient);margin:0 auto 0.5rem;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700">${escapeHTML(c.name.charAt(0))}</div>
+                    <p style="font-weight:600;font-size:0.875rem">${escapeHTML(c.name)}</p>
+                    <p style="font-size:0.7rem;color:var(--muted)">${escapeHTML(c.character)}</p>
+                  </div>
+                `).join('')}
+              </div>
+            </section>
+          ` : ''}
+
+          ${similar.length ? `
+            <section>
+              <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:1rem" class="gradient-text">مسلسلات مشابهة</h2>
+              <div class="grid-cards" id="similar-grid">
+                ${similar.map((r) => seriesCardHTML(r.s)).join('')}
+              </div>
+            </section>
+          ` : ''}
+        </div>
+      `;
+
+      // Toggle watchlist
+      document.getElementById('toggle-list').onclick = () => {
+        const exists = IDLEB.stores.watchlist.get().items.some((x) => x.id === id);
+        if (exists) {
+          IDLEB.stores.watchlist.set((s) => ({ ...s, items: s.items.filter((x) => x.id !== id) }));
+          showToast('أزيل من المفضلة');
+        } else {
+          IDLEB.stores.watchlist.set((s) => ({ ...s, items: [series, ...s.items] }));
+          showToast('أضيف للمفضلة', 'success');
+        }
+        setTimeout(() => location.reload(), 300);
+      };
+
+      // Rating
+      document.querySelectorAll('#rating-row button').forEach((b) => {
+        b.onclick = () => {
+          const v = Number(b.dataset.rating);
+          IDLEB.stores.ratings.set((s) => ({ ...s, bySeries: { ...s.bySeries, [id]: v } }));
+          showToast('شكراً لتقييمك!', 'success');
+          setTimeout(() => location.reload(), 300);
+        };
+      });
+
+      // Share
+      document.getElementById('share-btn').onclick = () => {
+        if (navigator.share) {
+          navigator.share({ title: series.title, text: series.description, url: location.href });
+        } else {
+          navigator.clipboard.writeText(location.href);
+          showToast('تم نسخ الرابط!', 'success');
+        }
+      };
+
+      attachCardEvents(document.getElementById('detail-content'));
+
+      // Load seasons & episodes
+      const seasonsList = document.getElementById('seasons-list');
+      for (const season of seasons) {
+        const eps = (await api.getEpisodes(id, season.id)).data;
+        const wrap = document.createElement('div');
+        wrap.className = 'glass';
+        wrap.style.cssText = 'border-radius:1rem;overflow:hidden';
+        wrap.innerHTML = `
+          <button class="season-toggle" style="width:100%;padding:1rem;display:flex;align-items:center;gap:1rem;text-align:right;cursor:pointer">
+            <div style="width:4rem;height:5rem;border-radius:0.5rem;background:var(--gradient);display:flex;align-items:center;justify-content:center;color:white;font-weight:700">${season.number}</div>
+            <div style="flex:1"><h3 style="font-weight:700">الموسم ${season.number}</h3><p style="font-size:0.875rem;color:var(--muted)">${eps.length} حلقة</p></div>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="ep-list" style="display:none;border-top:1px solid var(--border);padding:0.5rem">
+            ${eps.map((ep) => `
+              <a class="ep-item" href="watch.html?seriesId=${id}&seasonId=${season.id}&episodeId=${ep.id}">
+                <div class="ep-thumb skeleton" style="width:5rem;height:3rem;background:var(--gradient);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:0.75rem">${ep.number}</div>
+                <div style="flex:1"><p style="font-weight:500;font-size:0.875rem">الحلقة ${ep.number}</p><p style="font-size:0.75rem;color:var(--muted)">${escapeHTML(ep.title)}</p></div>
+                <span style="font-size:0.75rem;color:var(--muted)">${ep.duration}د</span>
+              </a>
+            `).join('')}
+          </div>
+        `;
+        wrap.querySelector('.season-toggle').onclick = () => {
+          const list = wrap.querySelector('.ep-list');
+          list.style.display = list.style.display === 'none' ? 'block' : 'none';
+        };
+        seasonsList.appendChild(wrap);
+      }
+    })();
+  </script>
+</body>
+</html>

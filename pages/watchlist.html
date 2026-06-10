@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مفضلتي — IDLEB TV</title>
+  <link rel="icon" href="../assets/favicon.svg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/responsive.css" />
+</head>
+<body>
+  <div id="app-loader" class="app-loader"><div class="loader-logo gradient-text">IDLEB TV</div><div class="loader-bar"><div class="loader-bar-inner"></div></div></div>
+  <canvas id="particles" class="particles-canvas"></canvas>
+  <header id="navbar" class="navbar">
+    <nav class="navbar-inner">
+      <a href="../index.html" class="logo"><span class="logo-play">▶</span><span class="logo-text gradient-text">IDLEB</span><span class="logo-tv">TV</span></a>
+      <ul class="nav-links"><li><a href="../index.html">الرئيسية</a></li><li><a href="series.html">المسلسلات</a></li></ul>
+      <div class="nav-actions">
+        <button id="theme-toggle" class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+        <a href="login.html" id="auth-btn" class="btn-primary">دخول</a>
+      </div>
+    </nav>
+  </header>
+  <main>
+    <div class="page-head">
+      <h1 style="color:var(--pink)">♥ مفضلتي</h1>
+      <button class="btn-ghost" id="clear" style="color:#FCA5A5">مسح الكل</button>
+    </div>
+    <div style="max-width:1400px;margin:0 auto;padding:0 1.5rem" id="content"></div>
+  </main>
+  <footer class="site-footer"><div class="footer-bottom">© <span id="year"></span> IDLEB TV</div></footer>
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/store.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/particles.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    (function () {
+      const { seriesCardHTML, attachCardEvents, showToast } = IDLEB.utils;
+
+      function render() {
+        const items = IDLEB.stores.watchlist.get().items;
+        const c = document.getElementById('content');
+        if (!items.length) {
+          c.innerHTML = '<div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><p>قائمة مفضلتك فارغة</p></div>';
+          return;
+        }
+        c.innerHTML = '<div class="grid-cards">' + items.map(seriesCardHTML).join('') + '</div>';
+        attachCardEvents(c);
+      }
+      render();
+      IDLEB.stores.watchlist.subscribe(render);
+
+      document.getElementById('clear').onclick = () => {
+        if (confirm('مسح كل المفضلة؟')) {
+          IDLEB.stores.watchlist.set({ items: [] });
+          showToast('تم المسح');
+        }
+      };
+    })();
+  </script>
+</body>
+</html>

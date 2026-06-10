@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>خريطة الدول — IDLEB TV</title>
+  <link rel="icon" href="../assets/favicon.svg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/responsive.css" />
+  <style>.map-svg circle.dot{transition:transform .2s;cursor:pointer;transform-origin:center;transform-box:fill-box}.map-svg circle.dot:hover{transform:scale(1.5)}</style>
+</head>
+<body>
+  <div id="app-loader" class="app-loader"><div class="loader-logo gradient-text">IDLEB TV</div><div class="loader-bar"><div class="loader-bar-inner"></div></div></div>
+  <canvas id="particles" class="particles-canvas"></canvas>
+  <header id="navbar" class="navbar">
+    <nav class="navbar-inner">
+      <a href="../index.html" class="logo"><span class="logo-play">▶</span><span class="logo-text gradient-text">IDLEB</span><span class="logo-tv">TV</span></a>
+      <ul class="nav-links"><li><a href="../index.html">الرئيسية</a></li><li><a href="countries.html" class="active">الخريطة</a></li></ul>
+      <div class="nav-actions"><button id="theme-toggle" class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button><a href="login.html" id="auth-btn" class="btn-primary">دخول</a></div>
+    </nav>
+  </header>
+  <main>
+    <div class="page-head"><h1>🗺 خريطة المسلسلات</h1></div>
+    <div style="max-width:1400px;margin:0 auto;padding:0 1.5rem">
+      <div class="glass" style="padding:1rem;border-radius:1rem;overflow:hidden">
+        <svg class="map-svg" viewBox="0 0 1000 500" style="width:100%;height:auto" role="img" aria-label="خريطة العالم">
+          <g id="grid-lines"></g>
+          <g id="dots"></g>
+        </svg>
+      </div>
+      <div id="list" class="grid-cards" style="grid-template-columns:repeat(auto-fill,minmax(120px,1fr));margin-top:1.5rem"></div>
+    </div>
+  </main>
+  <footer class="site-footer"><div class="footer-bottom">© <span id="year"></span> IDLEB TV</div></footer>
+  <div id="toast-container" class="toast-container"></div>
+  <script src="../js/config.js"></script>
+  <script src="../js/store.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/particles.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    (async function () {
+      const POS = {TR:[580,200],EG:[550,240],SY:[575,215],SA:[580,280],AE:[620,290],IQ:[590,230],JO:[565,240],LB:[570,225],KW:[595,260],MA:[430,250],DZ:[475,240],TN:[490,220],LY:[510,250],SD:[550,300],IN:[700,270],PK:[700,240],KR:[820,200],JP:[850,200],CN:[780,220],US:[200,220],GB:[480,150],FR:[490,175],DE:[510,165],ES:[450,195],IT:[510,195]};
+      const { escapeHTML } = IDLEB.utils;
+      const { data } = await IDLEB.api.getCountries();
+      const dots = document.getElementById('dots');
+      const list = document.getElementById('list');
+      document.getElementById('grid-lines').innerHTML =
+        Array.from({length:20},(_,i)=>`<line x1="${i*50}" y1="0" x2="${i*50}" y2="500" stroke="rgba(167,139,250,0.05)"/>`).join('') +
+        Array.from({length:10},(_,i)=>`<line x1="0" y1="${i*50}" x2="1000" y2="${i*50}" stroke="rgba(167,139,250,0.05)"/>`).join('');
+      dots.innerHTML = data.map((c) => {
+        const pos = POS[c.code] || [500, 250];
+        const r = Math.max(8, Math.min(20, c.count / 5));
+        return `<a href="series.html?country=${c.code}"><circle class="dot" cx="${pos[0]}" cy="${pos[1]}" r="${r}" fill="rgba(124,58,237,0.4)"/><circle cx="${pos[0]}" cy="${pos[1]}" r="4" fill="#7C3AED"/><text x="${pos[0]}" y="${pos[1]-12}" text-anchor="middle" fill="white" font-size="10">${escapeHTML(c.name)}</text></a>`;
+      }).join('');
+      list.innerHTML = data.map((c) => `<a href="series.html?country=${c.code}" class="glass" style="padding:0.75rem;text-align:center;font-size:0.875rem;border-radius:0.75rem;display:block">${escapeHTML(c.name)}<span style="display:block;font-size:0.7rem;color:var(--muted)">${c.count}</span></a>`).join('');
+    })();
+  </script>
+</body>
+</html>

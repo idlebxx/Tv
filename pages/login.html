@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>دخول — IDLEB TV</title>
+  <link rel="icon" href="../assets/favicon.svg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/responsive.css" />
+</head>
+<body>
+  <div id="app-loader" class="app-loader"><div class="loader-logo gradient-text">IDLEB TV</div><div class="loader-bar"><div class="loader-bar-inner"></div></div></div>
+  <canvas id="particles" class="particles-canvas"></canvas>
+  <header id="navbar" class="navbar">
+    <nav class="navbar-inner">
+      <a href="../index.html" class="logo"><span class="logo-play">▶</span><span class="logo-text gradient-text">IDLEB</span><span class="logo-tv">TV</span></a>
+      <div class="nav-actions">
+        <button id="theme-toggle" class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <div style="min-height:80vh;display:flex;align-items:center;justify-content:center;padding:1rem">
+      <form class="form-card glass-strong" id="auth-form">
+        <a href="../index.html" style="display:flex;justify-content:center;margin-bottom:1.5rem">
+          <span class="logo"><span class="logo-play">▶</span><span class="logo-text gradient-text">IDLEB</span><span class="logo-tv">TV</span></span>
+        </a>
+        <h1 style="font-size:1.5rem;font-weight:700;text-align:center;margin-bottom:0.25rem" id="auth-title">تسجيل الدخول</h1>
+        <p style="font-size:0.875rem;color:var(--muted);text-align:center;margin-bottom:1.5rem">مرحباً بك في IDLEB TV</p>
+
+        <div class="social-btns">
+          <button type="button" data-social="google">🔵 Google</button>
+          <button type="button" data-social="github">🐙 GitHub</button>
+        </div>
+
+        <div class="divider"><span>أو</span></div>
+
+        <div id="name-field" class="input-wrap" style="display:none">
+          <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <input type="text" id="name" class="input" placeholder="الاسم" />
+        </div>
+        <div class="input-wrap">
+          <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <input type="email" id="email" required class="input" placeholder="البريد الإلكتروني" />
+        </div>
+        <div class="input-wrap">
+          <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input type="password" id="password" required minlength="6" class="input has-toggle" placeholder="كلمة المرور" />
+          <button type="button" class="toggle-pwd" id="toggle-pwd">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%;justify-content:center;padding:0.75rem;margin-top:0.5rem" id="submit-btn">دخول</button>
+        <p style="font-size:0.875rem;text-align:center;margin-top:1rem;color:var(--muted)">
+          <span id="toggle-mode-text">ليس لديك حساب؟</span>
+          <a href="#" id="toggle-mode" style="color:var(--primary-3)">أنشئ واحداً</a>
+        </p>
+      </form>
+    </div>
+  </main>
+
+  <div id="toast-container" class="toast-container"></div>
+  <script src="../js/config.js"></script>
+  <script src="../js/store.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/particles.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    (function () {
+      let mode = 'login';
+      const title = document.getElementById('auth-title');
+      const submitBtn = document.getElementById('submit-btn');
+      const toggleText = document.getElementById('toggle-mode-text');
+      const toggleMode = document.getElementById('toggle-mode');
+      const nameField = document.getElementById('name-field');
+
+      function setMode(m) {
+        mode = m;
+        if (m === 'signup') {
+          title.textContent = 'حساب جديد';
+          submitBtn.textContent = 'إنشاء حساب';
+          toggleText.textContent = 'لديك حساب؟';
+          toggleMode.textContent = 'سجّل دخول';
+          nameField.style.display = 'block';
+        } else {
+          title.textContent = 'تسجيل الدخول';
+          submitBtn.textContent = 'دخول';
+          toggleText.textContent = 'ليس لديك حساب؟';
+          toggleMode.textContent = 'أنشئ واحداً';
+          nameField.style.display = 'none';
+        }
+      }
+      toggleMode.onclick = (e) => { e.preventDefault(); setMode(mode === 'login' ? 'signup' : 'login'); };
+
+      document.getElementById('toggle-pwd').onclick = () => {
+        const p = document.getElementById('password');
+        p.type = p.type === 'password' ? 'text' : 'password';
+      };
+
+      document.getElementById('auth-form').onsubmit = (e) => {
+        e.preventDefault();
+        IDLEB.auth.login(document.getElementById('email').value, document.getElementById('password').value, document.getElementById('name').value);
+      };
+
+      document.querySelectorAll('[data-social]').forEach((b) => {
+        b.onclick = () => IDLEB.auth.socialLogin(b.dataset.social);
+      });
+    })();
+  </script>
+</body>
+</html>

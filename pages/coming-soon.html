@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>قريباً — IDLEB TV</title>
+  <link rel="icon" href="../assets/favicon.svg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/responsive.css" />
+</head>
+<body>
+  <div id="app-loader" class="app-loader"><div class="loader-logo gradient-text">IDLEB TV</div><div class="loader-bar"><div class="loader-bar-inner"></div></div></div>
+  <canvas id="particles" class="particles-canvas"></canvas>
+  <header id="navbar" class="navbar">
+    <nav class="navbar-inner">
+      <a href="../index.html" class="logo"><span class="logo-play">▶</span><span class="logo-text gradient-text">IDLEB</span><span class="logo-tv">TV</span></a>
+      <ul class="nav-links"><li><a href="../index.html">الرئيسية</a></li><li><a href="coming-soon.html" class="active">قريباً</a></li></ul>
+      <div class="nav-actions"><button id="theme-toggle" class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button><a href="login.html" id="auth-btn" class="btn-primary">دخول</a></div>
+    </nav>
+  </header>
+  <main>
+    <div class="page-head"><h1>⏰ قريباً</h1><p>مواعيد الحلقات القادمة</p></div>
+    <div style="max-width:1400px;margin:0 auto;padding:0 1.5rem" id="content" class="grid-cards"></div>
+  </main>
+  <footer class="site-footer"><div class="footer-bottom">© <span id="year"></span> IDLEB TV</div></footer>
+  <div id="toast-container" class="toast-container"></div>
+  <script src="../js/config.js"></script>
+  <script src="../js/store.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/particles.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    (async function () {
+      const { escapeHTML } = IDLEB.utils;
+      const { data } = await IDLEB.api.getSeries();
+      const list = data.filter((s) => s.status === 'ongoing').slice(0, 12);
+      document.getElementById('content').innerHTML = list.map((s, i) => {
+        const target = new Date();
+        target.setDate(target.getDate() + (i % 7) + 1);
+        target.setHours(20, 0, 0, 0);
+        return `
+          <a href="series-detail.html?id=${s.id}" class="glass" style="border-radius:1rem;overflow:hidden;display:block">
+            <div style="aspect-ratio:16/9;background:var(--gradient)"></div>
+            <div style="padding:1rem">
+              <h3 style="font-weight:700;margin-bottom:0.25rem">${escapeHTML(s.title)}</h3>
+              <p style="font-size:0.75rem;color:var(--muted)">الحلقة القادمة</p>
+              <p class="countdown" style="margin-top:0.5rem" data-target="${target.toISOString()}">--:--:--</p>
+            </div>
+          </a>
+        `;
+      }).join('');
+
+      // Live countdowns
+      function tick() {
+        document.querySelectorAll('.countdown').forEach((el) => {
+          const t = new Date(el.dataset.target).getTime();
+          const diff = Math.max(0, t - Date.now());
+          if (diff === 0) { el.textContent = 'متاح الآن'; el.style.color = '#4ADE80'; return; }
+          const d = Math.floor(diff / 86400000);
+          const h = Math.floor((diff % 86400000) / 3600000);
+          const m = Math.floor((diff % 3600000) / 60000);
+          const s = Math.floor((diff % 60000) / 1000);
+          el.textContent = (d > 0 ? d + 'ي ' : '') + String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        });
+      }
+      tick();
+      setInterval(tick, 1000);
+    })();
+  </script>
+</body>
+</html>
