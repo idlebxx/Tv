@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>لوحة المشرف — IDLEB TV</title>
+  <link rel="icon" href="../assets/favicon.svg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/responsive.css" />
+</head>
+<body>
+  <div id="app-loader" class="app-loader"><div class="loader-logo gradient-text">IDLEB TV</div><div class="loader-bar"><div class="loader-bar-inner"></div></div></div>
+  <canvas id="particles" class="particles-canvas"></canvas>
+  <header id="navbar" class="navbar">
+    <nav class="navbar-inner">
+      <a href="../index.html" class="logo"><span class="logo-play">▶</span><span class="logo-text gradient-text">IDLEB</span><span class="logo-tv">TV</span></a>
+      <ul class="nav-links"><li><a href="../index.html">الرئيسية</a></li></ul>
+      <div class="nav-actions"><button id="theme-toggle" class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button></div>
+    </nav>
+  </header>
+  <main>
+    <div style="max-width:1200px;margin:0 auto;padding:5rem 1.5rem 2rem" id="content"></div>
+  </main>
+  <footer class="site-footer"><div class="footer-bottom">© <span id="year"></span> IDLEB TV</div></footer>
+  <div id="toast-container" class="toast-container"></div>
+  <script src="../js/config.js"></script>
+  <script src="../js/store.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/particles.js"></script>
+  <script src="../js/push.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    (function () {
+      const { escapeHTML, showToast } = IDLEB.utils;
+      const c = document.getElementById('content');
+      if (sessionStorage.getItem('idleb-admin') !== '1') {
+        c.innerHTML = `
+          <form id="login" class="form-card glass-strong" style="margin:2rem auto">
+            <div style="text-align:center;font-size:3rem;margin-bottom:1rem">🛡</div>
+            <h1 style="text-align:center;font-size:1.25rem;margin-bottom:0.5rem">لوحة التحكم</h1>
+            <p style="text-align:center;font-size:0.875rem;color:var(--muted);margin-bottom:1rem">دخول المشرفين (admin123)</p>
+            <input type="password" id="pwd" class="input" placeholder="كلمة المرور" autofocus />
+            <button class="btn-primary" style="width:100%;justify-content:center;margin-top:0.75rem;padding:0.75rem">دخول</button>
+          </form>
+        `;
+        document.getElementById('login').onsubmit = (e) => {
+          e.preventDefault();
+          if (document.getElementById('pwd').value === 'admin123') {
+            sessionStorage.setItem('idleb-admin', '1');
+            location.reload();
+          } else showToast('كلمة المرور خاطئة', 'error');
+        };
+        return;
+      }
+
+      const views = IDLEB.stores.analytics.get().views || {};
+      const ratings = IDLEB.stores.ratings.get().bySeries || {};
+      const wl = IDLEB.stores.watchlist.get().items;
+      const top = Object.entries(views).sort(([, a], [, b]) => b - a).slice(0, 10);
+      const totalViews = Object.values(views).reduce((a, b) => a + b, 0);
+
+      c.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:0.5rem">
+          <h1 class="gradient-text" style="font-size:1.875rem;font-weight:900">لوحة تحكم المشرف</h1>
+          <button class="btn-ghost" id="logout" style="color:#FCA5A5">خروج</button>
+        </div>
+        <div class="grid-cards" style="grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));margin-bottom:1.5rem">
+          <div class="stat-card"><div class="stat-icon" style="color:var(--primary-3)">👁</div><div class="stat-value">${totalViews}</div><div class="stat-label">مشاهدات</div></div>
+          <div class="stat-card"><div class="stat-icon" style="color:var(--pink)">♥</div><div class="stat-value">${wl.length}</div><div class="stat-label">مفضلات</div></div>
+          <div class="stat-card"><div class="stat-icon" style="color:#FACC15">★</div><div class="stat-value">${Object.keys(ratings).length}</div><div class="stat-label">تقييمات</div></div>
+        </div>
+        <div class="glass" style="padding:1rem;border-radius:1rem;margin-bottom:1.5rem">
+          <h2 style="font-weight:700;margin-bottom:0.75rem">المسلسلات الأكثر مشاهدة</h2>
+          ${top.length ? top.map(([id, count], i) => `
+            <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem">
+              <span style="width:1.5rem;text-align:center;color:var(--muted)">${i + 1}</span>
+              <div style="flex:1">
+                <p style="font-size:0.875rem;font-weight:500">مسلسل #${escapeHTML(id)}</p>
+                <div style="height:0.25rem;border-radius:0.25rem;background:var(--card);overflow:hidden;margin-top:0.25rem">
+                  <div style="height:100%;background:var(--gradient);width:${(count / top[0][1]) * 100}%"></div>
+                </div>
+              </div>
+              <span style="font-size:0.875rem;font-weight:700;color:var(--primary-3)">${count}</span>
+            </div>
+          `).join('') : '<p style="font-size:0.875rem;color:var(--muted)">لا توجد مشاهدات بعد</p>'}
+        </div>
+        <div class="glass" style="padding:1rem;border-radius:1rem">
+          <h2 style="font-weight:700;margin-bottom:0.75rem">إرسال إشعار حملة</h2>
+          <input id="nt-title" class="input" placeholder="عنوان" style="margin-bottom:0.5rem" />
+          <textarea id="nt-body" class="input" placeholder="النص" rows="3" style="margin-bottom:0.5rem;resize:vertical"></textarea>
+          <button class="btn-primary" id="send-nt">إرسال</button>
+        </div>
+      `;
+
+      document.getElementById('logout').onclick = () => { sessionStorage.removeItem('idleb-admin'); location.reload(); };
+      document.getElementById('send-nt').onclick = () => {
+        const t = document.getElementById('nt-title').value;
+        const b = document.getElementById('nt-body').value;
+        if (!t || !b) return showToast('املأ الحقول', 'error');
+        IDLEB.push.notify(t, { body: b, icon: '../assets/favicon.svg' });
+        showToast('تم الإرسال', 'success');
+      };
+    })();
+  </script>
+</body>
+</html>
