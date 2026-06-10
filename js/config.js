@@ -1,11 +1,13 @@
 /* ============================================
-   config.js — global configuration (FIXED)
+   config.js — global configuration (FIXED FOR STATIC HOSTING)
 ============================================ */
 
 window.IDLEB_CONFIG = {
-  API_BASE: 'https://admin.dramaramadan.net/api',
-  USE_PROXY: false,
-  USE_MOCK: false,  // ✅ تم التعديل: استخدام API الحقيقي
+  // استخدام Proxy مجاني لتفادي CORS
+  API_BASE: 'https://api.allorigins.win/raw?url=https://admin.dramaramadan.net/api',
+  USE_PROXY: true,
+  USE_MOCK: false,  // ✅ استخدام API الحقيقي
+  
   ASSETS: {
     PLACEHOLDER_POSTER: 'data:image/svg+xml;utf8,' + encodeURIComponent(`
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300">
