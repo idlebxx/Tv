@@ -1,5 +1,5 @@
 /* ============================================
-   player.js — video player with REAL video links
+   player.js — video player with proxy support
 ============================================ */
 
 (function () {
@@ -9,13 +9,11 @@
   const { showToast } = window.IDLEB.utils;
 
   async function buildPlayer(episode, nextEpisode, container) {
-    // جلب روابط المشاهدة الحقيقية
     showToast('جاري تحميل الروابط...', 'info');
     const links = await api.getWatchLinks(episode.id);
     
     let videoUrl = null;
     if (links && links.length > 0) {
-      // اختر أفضل جودة (أعلى جودة أولاً)
       const qualityOrder = ['4K', '1080p', 'HD', '720p', '480p', '360p'];
       const sorted = [...links].sort((a, b) => {
         const aIdx = qualityOrder.indexOf(a.quality) || 99;
@@ -71,7 +69,6 @@
     const sleepSel = wrap.querySelector('#sleep-timer');
     const qualitySel = wrap.querySelector('#quality-select');
 
-    // تغيير الجودة
     if (qualitySel) {
       qualitySel.addEventListener('change', () => {
         const currentTime = v.currentTime;
@@ -88,7 +85,6 @@
     let sleepInterval;
 
     v.addEventListener('loadedmetadata', () => {
-      // استعادة موضع المشاهدة السابق
       const saved = progress.get().byEpisode?.[episode.id];
       if (saved && saved.position > 10 && saved.position < v.duration - 30) {
         const restore = confirm(`هل تريد استئناف المشاهدة من ${Math.floor(saved.position / 60)}:${Math.floor(saved.position % 60)}؟`);
@@ -98,8 +94,8 @@
 
     v.addEventListener('timeupdate', () => {
       const t = v.currentTime;
-      skip.style.display = t > 0 && t < 90 ? 'flex' : 'none';
-      if (nextEpisode) {
+      if (skip) skip.style.display = t > 0 && t < 90 ? 'flex' : 'none';
+      if (nextEpisode && nextOverlay) {
         const d = v.duration || 0;
         nextOverlay.style.display = (d > 0 && d - t < 30) ? 'flex' : 'none';
       }
@@ -149,7 +145,6 @@
       }, 1000);
     });
 
-    // Media Session (شاشة القفل)
     if ('mediaSession' in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: episode.title || 'IDLEB TV',
